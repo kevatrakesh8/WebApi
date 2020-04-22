@@ -1,0 +1,367 @@
+Home Controller : 
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
+using System.Web.Mvc;
+
+namespace jQuery_AJAX_WebAPI_CRUD_MVC.Controllers
+{
+    public class HomeController : Controller
+    {
+        // GET: Home
+        public ActionResult Index()
+        {
+            AjaxSamplesEntities1 entities = new AjaxSamplesEntities1();
+            List<Customer> data = entities.Customers.ToList();
+            if (data.Count == 0)
+            {
+                data.Add(new Customer());
+            }
+
+            return View(data);
+        }
+    }
+}
+================================================================================
+================================================================================
+index.cshtml Home Controller : 
+
+@model IEnumerable<jQuery_AJAX_WebAPI_CRUD_MVC.Customer>
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>Index</title>
+    <style type="text/css">
+        body {
+            font-family: Arial;
+            font-size: 10pt;
+        }
+
+        .table {
+            border: 1px solid #ccc;
+            border-collapse: collapse;
+        }
+
+        .table th {
+            background-color: #F7F7F7;
+            color: #333;
+            font-weight: bold;
+        }
+
+        .table th, .table td {
+            padding: 5px;
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <table id="tblCustomers" class="table" cellpadding="0" cellspacing="0">
+        <tr>
+            <th style="width:100px">Customer Id</th>
+            <th style="width:150px">Name</th>
+            <th style="width:150px">Country</th>
+            <th style="width:150px"></th>
+        </tr>
+        @foreach (Customer customer in Model)
+        {
+            <tr>
+                <td class="CustomerId">
+                    <span>@customer.CustomerId</span>
+                </td>
+                <td class="Name">
+                    <span>@customer.Name</span>
+                    <input type="text" value="@customer.Name" style="display:none" />
+                </td>
+                <td class="Country">
+                    <span>@customer.Country</span>
+                    <input type="text" value="@customer.Country" style="display:none" />
+                </td>
+                <td>
+                    <a class="Edit" href="javascript:;">Edit</a>
+                    <a class="Update" href="javascript:;" style="display:none">Update</a>
+                    <a class="Cancel" href="javascript:;" style="display:none">Cancel</a>
+                    <a class="Delete" href="javascript:;">Delete</a>
+                </td>
+            </tr>
+        }
+    </table>
+    <table border="0" cellpadding="0" cellspacing="0">
+        <tr>
+            <td style="width: 150px">
+                Name<br />
+                <input type="text" id="txtName" style="width:140px" />
+            </td>
+            <td style="width: 150px">
+                Country:<br />
+                <input type="text" id="txtCountry" style="width:140px" />
+            </td>
+            <td style="width: 200px">
+                <br />
+                <input type="button" id="btnAdd" value="Add" />
+            </td>
+        </tr>
+    </table>
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+    <script type="text/javascript" src="http://ajax.cdnjs.com/ajax/libs/json2/20110223/json2.js"></script>
+    <script type="text/javascript">
+        $(function () {
+            //Remove the dummy row if data present.
+            if ($("#tblCustomers tr").length > 2) {
+                $("#tblCustomers tr:eq(1)").remove();
+            } else {
+                var row = $("#tblCustomers tr:last-child");
+                row.find(".Edit").hide();
+                row.find(".Delete").hide();
+                row.find("span").html('&nbsp;');
+            }
+        });
+        function AppendRow(row, customerId, name, country) {
+            //Bind CustomerId.
+            $(".CustomerId", row).find("span").html(customerId);
+
+            //Bind Name.
+            $(".Name", row).find("span").html(name);
+            $(".Name", row).find("input").val(name);
+
+            //Bind Country.
+            $(".Country", row).find("span").html(country);
+            $(".Country", row).find("input").val(country);
+
+            row.find(".Edit").show();
+            row.find(".Delete").show();
+
+            $("#tblCustomers").append(row);
+        };
+
+        //Add event handler.
+        $("body").on("click", "#btnAdd", function () {
+            var txtName = $("#txtName");
+            var txtCountry = $("#txtCountry");
+            var _customer = {};
+            _customer.Name = txtName.val();
+            _customer.Country = txtCountry.val();
+            $.ajax({
+                type: "POST",
+                url: "/api/AjaxAPI/InsertCustomer",
+                data: JSON.stringify(_customer),
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                success: function (r) {
+                    var row = $("#tblCustomers tr:last-child");
+                    if ($("#tblCustomers tr:last-child span").eq(0).html() != "&nbsp;") {
+                        row = row.clone();
+                    }
+                    AppendRow(row, r.CustomerId, r.Name, r.Country);
+                    txtName.val("");
+                    txtCountry.val("");
+                }
+            });
+        });
+
+        //Edit event handler.
+        $("body").on("click", "#tblCustomers .Edit", function () {
+            var row = $(this).closest("tr");
+            $("td", row).each(function () {
+                if ($(this).find("input").length > 0) {
+                    $(this).find("input").show();
+                    $(this).find("span").hide();
+                }
+            });
+            row.find(".Update").show();
+            row.find(".Cancel").show();
+            row.find(".Delete").hide();
+            $(this).hide();
+        });
+
+        //Update event handler.
+        $("body").on("click", "#tblCustomers .Update", function () {
+            var row = $(this).closest("tr");
+            $("td", row).each(function () {
+                if ($(this).find("input").length > 0) {
+                    var span = $(this).find("span");
+                    var input = $(this).find("input");
+                    span.html(input.val());
+                    span.show();
+                    input.hide();
+                }
+            });
+            row.find(".Edit").show();
+            row.find(".Delete").show();
+            row.find(".Cancel").hide();
+            $(this).hide();
+            var _customer = {};
+            _customer.CustomerId = row.find(".CustomerId").find("span").html();
+            _customer.Name = row.find(".Name").find("span").html();
+            _customer.Country = row.find(".Country").find("span").html();
+            $.ajax({
+                type: "POST",
+                url: "/api/AjaxAPI/UpdateCustomer",
+                data: JSON.stringify(_customer),
+                contentType: "application/json; charset=utf-8",
+                dataType: "json"
+            });
+        });
+
+        //Cancel event handler.
+        $("body").on("click", "#tblCustomers .Cancel", function () {
+            var row = $(this).closest("tr");
+            $("td", row).each(function () {
+                if ($(this).find("input").length > 0) {
+                    var span = $(this).find("span");
+                    var input = $(this).find("input");
+                    input.val(span.html());
+                    span.show();
+                    input.hide();
+                }
+            });
+            row.find(".Edit").show();
+            row.find(".Delete").show();
+            row.find(".Update").hide();
+            $(this).hide();
+        });
+
+        //Delete event handler.
+        $("body").on("click", "#tblCustomers .Delete", function () {
+            if (confirm("Do you want to delete this row?")) {
+                var row = $(this).closest("tr");
+                var _customer = {};
+                _customer.CustomerId = row.find("span").html();
+                $.ajax({
+                    type: "POST",
+                    url: "/api/AjaxAPI/DeleteCustomer",
+                    data: JSON.stringify(_customer),
+                    contentType: "application/json; charset=utf-8",
+                    dataType: "json",
+                    success: function (response) {
+                        if ($("#tblCustomers tr").length > 2) {
+                            row.remove();
+                        } else {
+                            row.find(".Edit").hide();
+                            row.find(".Delete").hide();
+                            row.find("span").html('&nbsp;');
+                        }
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>
+
+
+
+
+================================================================================
+================================================================================
+WebApi Conroller : 
+
+using System;
+using System.Web.Http;
+using System.Linq;
+using System.Collections.Generic;
+
+namespace jQuery_AJAX_WebAPI_CRUD_MVC.Controllers
+{
+    public class AjaxAPIController : ApiController
+    {
+        [Route("api/AjaxAPI/ListCustomer")]
+        [HttpGet]
+        public IHttpActionResult ListCustomer()
+        {
+            using (AjaxSamplesEntities1 entities = new AjaxSamplesEntities1())
+            {
+                IList<Customer> data = null;
+                data = entities.Customers.ToList();
+
+                return Ok(data);
+            }
+
+        }
+
+        [Route("api/AjaxAPI/InsertCustomer")]
+        [HttpPost]
+        public Customer InsertCustomer(Customer _customer)
+        {
+            using (AjaxSamplesEntities1 entities = new AjaxSamplesEntities1())
+            {
+                entities.Customers.Add(_customer);
+                entities.SaveChanges();
+            }
+
+            return _customer;
+        }
+
+        [Route("api/AjaxAPI/UpdateCustomer")]
+        [HttpPost]
+        public bool UpdateCustomer(Customer _customer)
+        {
+            using (AjaxSamplesEntities1 entities = new AjaxSamplesEntities1())
+            {
+                Customer updatedCustomer = (from c in entities.Customers
+                                            where c.CustomerId == _customer.CustomerId
+                                            select c).FirstOrDefault();
+                updatedCustomer.Name = _customer.Name;
+                updatedCustomer.Country = _customer.Country;
+                entities.SaveChanges();
+            }
+
+            return true;
+        }
+
+        [Route("api/AjaxAPI/DeleteCustomer")]
+        [HttpPost]
+        public void DeleteCustomer(Customer _customer)
+        {
+            using (AjaxSamplesEntities1 entities = new AjaxSamplesEntities1())
+            {
+                Customer customer = (from c in entities.Customers
+                                     where c.CustomerId == _customer.CustomerId
+                                     select c).FirstOrDefault();
+                entities.Customers.Remove(customer);
+                entities.SaveChanges();
+            }
+        }
+    }
+}
+
+
+
+================================================================================
+================================================================================
+API call with help of POSTMAN: 
+
+1.Get Method in the  Api : [HttpGet]
+  http://localhost:26404/api/AjaxAPI/ListCustomer
+
+2. Post method of Web Api:   [HttpPost]
+>   http://localhost:26404/api/AjaxAPI/InsertCustomer
+>   Body > Row > Json.
+    { 
+        "Name": "Suman",
+        "Country": "Kofin"
+     }
+
+3. Update the data of the database ,  [HttpPost]
+  >   http://localhost:26404/api/AjaxAPI/UpdateCustomer
+  >    {	 
+        "CustomerId":"1004",
+        "Name": "Suraj",
+        "Country": "Kolkata"
+       }
+ 
+
+3. Delete the method  : 
+  >   http://localhost:26404/api/AjaxAPI/DeleteCustomer  
+  >  {
+     "CustomerId": 1005,
+     "Name": "Vivek",
+     "Country": "Angole"
+     }
